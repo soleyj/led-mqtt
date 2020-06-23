@@ -83,7 +83,7 @@ byte scene_active = 0;
 void callback(char* topic, byte* message, unsigned int length) {
   StaticJsonDocument<256> doc;
   deserializeJson(doc, message, length);
-serializeJson(doc, Serial);
+  serializeJson(doc, Serial);
   if(doc["led_scene"] == "danger")
   {
     scene_active = 1;
