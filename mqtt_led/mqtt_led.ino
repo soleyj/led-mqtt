@@ -46,9 +46,9 @@ Adafruit_NeoPixel pixels(NUMPIXELS, PIN, NEO_GRB + NEO_KHZ800);
 
 // Update these with values suitable for your network.
 
-const char* ssid = "Test Jordi";
-const char* password = "jordisoley";
-const char* mqtt_server = "192.168.1.46";
+const char* ssid = "WAIFAI_V4A3";
+const char* password = "24419083V";
+const char* mqtt_server = "192.168.1.125";
 
 WiFiClient espClient;
 PubSubClient client(espClient);
@@ -79,13 +79,18 @@ void setup_wifi() {
   Serial.println(WiFi.localIP());
 
 }
-
+byte scene_active = 0;
 void callback(char* topic, byte* message, unsigned int length) {
   StaticJsonDocument<256> doc;
   deserializeJson(doc, message, length);
+serializeJson(doc, Serial);
   if(doc["led_scene"] == "danger")
   {
-    
+    scene_active = 1;
+  }
+  else if(doc["led_scene"] == "stop")
+  {
+    scene_active=0;
   }
       
 
@@ -125,6 +130,7 @@ void setup() {
   pixels.clear();
 }
 byte send_alive = 0;
+
 void loop() {
 
   if (!client.connected()) {
@@ -141,10 +147,25 @@ void loop() {
       client.publish("led-menjador/out", "{'alive':1}");
     }
     lastMsg = now;
-    fade_in();
+    if(scene_active == 1)
+    {
+       fade_in();
+    }
+    else
+    {
+       black();
+    }
   }
 }
 
+void black()
+{
+  for(byte x =0; x< NUMPIXELS;x++)
+  {
+     pixels.setPixelColor(x, pixels.Color(0, 0, 0));
+  }
+  pixels.show();
+}
 
 byte timer_fade_in = 2;
 void fade_in()
