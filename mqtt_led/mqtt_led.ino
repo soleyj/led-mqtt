@@ -22,6 +22,9 @@
   - Select your ESP8266 in "Tools -> Board"
 
 */
+#include <ArduinoOTA.h>
+
+#include "ota_arduino.hpp"
 
 #include <Adafruit_NeoPixel.h>
 #ifdef __AVR__
@@ -77,6 +80,8 @@ void setup_wifi() {
   Serial.println("WiFi connected");
   Serial.println("IP address: ");
   Serial.println(WiFi.localIP());
+  InitOTA();
+
 
 }
 byte scene_active = 0;
@@ -91,6 +96,14 @@ void callback(char* topic, byte* message, unsigned int length) {
   else if(doc["led_scene"] == "stop")
   {
     scene_active=0;
+  }
+  else if(doc["led_scene"] == "odi")
+  {
+    scene_active=2;
+  }
+  else if(doc["led_scene"] == "confeti")
+  {
+    scene_active=3;
   }
       
 
@@ -132,6 +145,7 @@ void setup() {
 byte send_alive = 0;
 
 void loop() {
+  ArduinoOTA.handle();
 
   if (!client.connected()) {
     reconnect();
@@ -143,58 +157,30 @@ void loop() {
     send_alive++;
     if(send_alive == 100)
     {
+      StaticJsonDocument<256> doc;
+      doc["alive"] = scene_active;
+      char buffer[256];
+      serializeJson(doc, buffer);
+      
       send_alive = 0;
-      client.publish("led-menjador/out", "{'alive':1}");
+      client.publish("led-menjador/out", buffer);
     }
     lastMsg = now;
     if(scene_active == 1)
     {
        fade_in();
     }
+    else if(scene_active == 2)
+    {
+      hate();
+    }
+    else if(scene_active == 3)
+    {
+      confeti(1);
+    }
     else
     {
        black();
     }
   }
-}
-
-void black()
-{
-  for(byte x =0; x< NUMPIXELS;x++)
-  {
-     pixels.setPixelColor(x, pixels.Color(0, 0, 0));
-  }
-  pixels.show();
-}
-
-byte timer_fade_in = 2;
-void fade_in()
-{
-  static int pixel_print;
-  static byte counter = 0;
-  counter++;
-  Serial.println(pixel_print);
-  if(counter == timer_fade_in)
-  {
-      counter =0;
-      pixel_print++;
-      if(NUMPIXELS/2 < pixel_print)
-      {
-        pixel_print =0; 
-      }
-  }
-  for(byte x =0; x< NUMPIXELS/2+1;x++)
-  {
-    if(x <= pixel_print)
-    {
-       pixels.setPixelColor(x, pixels.Color(0, 150, 0));
-       pixels.setPixelColor(NUMPIXELS-x, pixels.Color(0, 150, 0));
-    }
-    else
-    {
-       pixels.setPixelColor(x, pixels.Color(0, 0, 0));
-       pixels.setPixelColor(NUMPIXELS-x, pixels.Color(0, 0, 0));
-    }
-  }
-  pixels.show();
 }
